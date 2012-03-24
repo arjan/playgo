@@ -35,14 +35,31 @@
 
 -define(AUTH_URL, "https://accounts.google.com/o/oauth2/auth").
 -define(TOKEN_URL, "https://accounts.google.com/o/oauth2/token").
+-define(ASSERTION_TYPE, "http://oauth.net/grant_type/jwt/1.0/bearer").
 
 
 request(UserId, Url, Context) ->
     Token = m_rsc:p(UserId, google_token, Context),
-    {ok, {_, _, Body}} = httpc:request(get, {Url, [{"Authorization", "Bearer " ++ z_convert:to_list(Token)}]}, [], []),
-    z_convert:convert_json(mochijson2:decode(Body)).
-    
+    {ok, {{_, Code, _}, _, Body}} = httpc:request(get, {Url, [{"Authorization", "Bearer " ++ z_convert:to_list(Token)}]}, [], []),
+    Payload = z_convert:convert_json(mochijson2:decode(Body)),
+    case Code of
+        200 ->
+            Payload;
+        403 ->
+            ?DEBUG(Payload),
+            error;
+        401 ->
+            %% extend code
+            ?DEBUG(Payload),
 
+%%            ok = renew_token(UserId, RenewToke, Context),
+            %%          request(UserId, Url, Context)
+            ok
+    end.
+    
+renew_token(UserId, Context) ->
+    
+    ok.
 
 %% @doc Return the URI at which to authorize at google.
 authorize_uri(Context) ->

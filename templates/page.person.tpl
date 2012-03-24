@@ -1,27 +1,30 @@
-{% extends "page.tpl" %}
+{% extends "mobilebase.tpl" %}
+
+{% block title %}
+{{ m.rsc[m.acl.user].title }}'s page
+{% endblock %}
 
 {% block content %}
-<h1>{{ id.title }}</h1>
-{% debug %}
 
-{% print m.acl.user %}
+<h1>Tracks by this user:</h1>
+<ul>
+    {% for id in m.search[{query creator_id=id cat=`track`}] %}
+    <li><a href="{{ id.page_url }}">{{ id.title }}</a> created on {{ id.created|date:"j F Y" }}</li>
+    {% endfor %}
+</ul>
 
-{% if id.lastfm_name %}
-<h1>Authorized with lastfm as <u>{{ id.lastfm_name }}</u></h1>
+{% if m.acl.user == id %}
+<h1>Welcome on your page</h1>
 
-{% button text="Get current song" postback={get_song} delegate=`playmobil` %}
-
-{% endif %}
-
-{% if id.google_token %}
-<h1>Authorized at google</h1>
-
-<div id="loc"></div>
-{% button text="Get my location" postback={get_location} delegate=`playmobil` %}
-
+{% if id.current_track %}
+{% include "_user_stop.tpl" %}
 {% else %}
+{% include "_user_start.tpl" %}
 {% endif %}
-{% button text="Logon to google" action={redirect dispatch="auth_google_authorize" p=page} %}
-
+#
+{% button text="Get current song" postback={get_song} delegate=`playmobil` %}
+{% button text="Get my location" postback={get_location} delegate=`playmobil` %}
+#
+{% endif %}
 {% endblock %}
 

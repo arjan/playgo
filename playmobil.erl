@@ -17,47 +17,59 @@
 
 -module(playmobil).
 -author("Arjan Scherpenisse").
+-behaviour(gen_server).
 
 -mod_title("playmobil zotonic site").
--mod_description("An empty Zotonic site, to base your site on.").
+-mod_description("Aggregating geo sound.").
 -mod_prio(10).
 
 -include_lib("zotonic.hrl").
+
+-record(state, {context}).
+
+%% gen_server exports
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+-export([start_link/1]).
 
 -export([
          observe_signup_url/2,
          event/2
         ]).
 
--define(CURRENT_LOCATION, "https://www.googleapis.com/latitude/v1/currentLocation").
 
 %%====================================================================
-%% support functions go here
+%% API
 %%====================================================================
-
-text(Elt) ->
-    proplists:get_value('#text', Elt).
 
 event(#postback{message={get_location, _A}}, Context) ->
-    R = collect_position(z_acl:user(Context), Context),
+    R = playmobil_fetch:collect_position(z_acl:user(Context), Context),
     ?DEBUG(R),
-
     Context;
 
+event(#postback{message={remove_track, [{id, Id}]}}, Context) ->
+    m_rsc:delete(Id, Context),
+    UserId = z_acl:user(Context),
+    z_render:wire({redirect, [{location, m_rsc:p(UserId, page_url, Context)}]}, Context);
+
 event(#postback{message={get_song, _A}}, Context) ->
-    collect_track(z_acl:user(Context), Context),
-    Context.
+    T = playmobil_fetch:collect_track(z_acl:user(Context), Context),
+    ?DEBUG(T),
+    Context;
 
+event(#postback{message={start_track, _A}}, Context) ->
+    ?DEBUG(_A),
+    Id = z_acl:user(Context),
+    {ok, TrackId} = m_rsc:insert([{category, track},
+                          {title, "Unknown track"}],
+                         Context),
+    m_rsc:update(Id, [{current_track, TrackId}], Context),
+    z_render:wire({redirect, [{dispatch, auth_google_authorize}]}, Context);
 
-
-    
-
-    %[{recenttracks,[{track,[[{artist,[{'#text',<<"Yellowjackets">>},{mbid,<<"1243d99e-8f5a-4f7e-810c-5a1d20f41065">>}]},{name,<<"Revelation - Live (1991 The Roxy)">>},{streamable,<<"0">>},{mbid,<<>>},{album,[{'#text',<<>>},{mbid,<<>>}]},{url,<<"http://www.last.fm/music/Yellowjackets/_/Revelation+-+Live+%281991+The+Roxy%29">>},{image,[[{'#text',<<>>},{size,<<"small">>}],[{'#text',<<>>},{size,<<"medium">>}],[{'#text',<<>>},{size,<<"large">>}],[{'#text',<<>>},{size,<<"extralarge">>}]]},{'@attr',[{nowplaying,<<"true">>}]}],[{artist,[{'#text',<<"ScHoolboy Q">>},{mbid,<<"bce6d667-cde8-485e-b078-c0a05adea36d">>}]},{name,<<"Hands On The Wheel (feat. A$ap Rocky)">>},{streamable,<<"0">>},{mbid,<<>>},{album,[{'#text',<<"Habits & Contradictions">>},{mbid,<<>>}]},{url,<<"http://www.last.fm/music/ScHoolboy+Q/_/Hands+On+The+Wheel+%28feat.+A%24ap+Rocky%29">>},{image,[[{'#text',<<>>},{size,<<"small">>}],[{'#text',<<>>},{size,<<"medium">>}],[{'#text',<<>>},{size,<<"large">>}],[{'#text',<<>>},{size,<<"extralarge">>}]]},{date,[{'#text',<<"24 Mar 2012, 11:49">>},{uts,<<"1332589777">>}]}]]},{'@attr',[{user,<<"acscherp">>},{page,<<"1">>},{perPage,<<"1">>},{totalPages,<<"19797">>},{total,<<"19797">>}]}]}]
-
-%% %    ?DEBUG(P),
-%%     {struct, Tracks} = proplists:get_value(<<"recenttracks">>, P),
-%%     %{struct, Track} = proplists:get_value(<<"track">>, Tracks),
-%%     ?DEBUG(Tracks),
+event(#postback{message={stop_track, _A}}, Context) ->
+    Id = z_acl:user(Context),
+    %TrackId = m_rsc:p(Id, current_track, Context),
+    m_rsc:update(Id, [{current_track, undefined}], Context),
+    z_render:wire({reload, []}, Context).
 
 
 
@@ -67,27 +79,50 @@ observe_signup_url(#signup_url{props=Props, signup_props=SignupProps}, Context) 
     {ok, m_rsc:p(UserId, page_url, Context)}.
 
 
+%% @spec start_link() -> {ok,Pid} | ignore | {error,Error}
+%% @doc Starts the server
 
-%% @doc Collect the user's currently listening track according to last.fm
-collect_track(UserId, Context) ->
-    P = mod_lastfm:request_unauthorized("user.getRecentTracks",
-                                        [{user, m_rsc:p(UserId, lastfm_name, Context)},
-                                         {limit, 1}],
-                                        Context),
-    P1 = z_convert:convert_json(P),
-    [{recenttracks, [{track, [T|_]}, _]}] = P1,
+start_link(Args) when is_list(Args) ->
+    gen_server:start_link(?MODULE, Args, []).
 
-    Artist = text(proplists:get_value(artist, T)),
-    Track = proplists:get_value(name, T),
-    {Artist, Track}.
-    
+%%====================================================================
+%% gen_server callbacks
+%%====================================================================
 
-%% @doc Collect the user's position according to Google latitude.
-collect_position(UserId, Context) ->
-    [{data, P}] = mod_auth_google:request(UserId, ?CURRENT_LOCATION, Context),
-    ?DEBUG(P),
-    TS = z_convert:to_integer(proplists:get_value(timestampMs, P)) div 1000,
-    Now = calendar:universal_time_to_local_time(z_datetime:timestamp_to_datetime(TS)),
-    Long = proplists:get_value(longitude, P),
-    Lat = proplists:get_value(latitude, P),
-    {Now, Long, Lat}.
+init(Args) ->
+    ?DEBUG("init playmobil"),
+    {context, Context} = proplists:lookup(context, Args),
+    m_track:install(Context),
+    timer:send_interval(15000, poll),
+    {ok, #state{context=Context}}.
+
+handle_call(Message, _From, State) ->
+    {stop, {unknown_call, Message}, State}.
+
+
+handle_cast(Message, State) ->
+    {stop, {unknown_cast, Message}, State}.
+
+
+handle_info(poll, State=#state{context=Context}) ->
+    playmobil_fetch:collect_all(Context),
+    {noreply, State};
+
+handle_info(_Info, State) ->
+    ?DEBUG(_Info),
+    {noreply, State}.
+
+terminate(_Reason, _State) ->
+    ok.
+
+%% @spec code_change(OldVsn, State, Extra) -> {ok, NewState}
+%% @doc Convert process state when code is changed
+
+code_change(_OldVsn, State, _Extra) ->
+    {ok, State}.
+
+
+%%====================================================================
+%% support functions
+%%====================================================================
+
