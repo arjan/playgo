@@ -1,0 +1,4 @@
+[
+	{lastfm_authorize, ["lastfm", "authorize"], resource_lastfm_authorize, []},
+	{lastfm_redirect,  ["lastfm", "redirect"], resource_lastfm_redirect, []}
+].
