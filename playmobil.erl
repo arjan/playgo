@@ -60,8 +60,9 @@ event(#postback{message={start_track, _A}}, Context) ->
     ?DEBUG(_A),
     Id = z_acl:user(Context),
     {ok, TrackId} = m_rsc:insert([{category, track},
-                          {title, "Unknown track"}],
-                         Context),
+                                  {is_published, true},
+                                  {title, "Unknown track"}],
+                                 Context),
     m_rsc:update(Id, [{current_track, TrackId}], Context),
     z_render:wire({redirect, [{dispatch, auth_google_authorize}]}, Context);
 

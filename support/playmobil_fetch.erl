@@ -50,11 +50,15 @@ collect_for_person(UserId, TrackId, Context) ->
     case catch collect_track(UserId, Context) of
         {Artist, Track} ->
             R=mod_lastfm:request_unauthorized("track.getPlayLinks", [{"artist[]", Artist}, {"track[]", Track}], Context),
-            ?DEBUG(R),
+            %?DEBUG(R),
             %{struct,[{<<"spotify">>,{struct,[{<<"track">>,{struct,[{<<"name">>,<<"Dr. Tyrell's Death">>},{<<"artist">>,{struct,[{<<"#text">>,<<"Vangelis">>},{<<"id">>,<<"1161">>}]}},{<<"externalids">>,{struct,[{<<"spotify">>,<<"spotify:track:3zC88xoyxiITQEvt9FH34a">>}]}},{<<"@attr">>,{struct,[{<<"id">>,<<"151546077">>}]}}]}}]}}]}
             {struct,[{<<"spotify">>,{struct,[{<<"track">>,{struct,P}}]}}]} = R,
-            {struct, Ext} = proplists:get_value(<<"externalids">>, P),
-            SpotifyLink = proplists:get_value(<<"spotify">>, Ext),
+            SpotifyLink = case proplists:get_value(<<"externalids">>, P) of
+                              {struct, Ext} ->
+                                  proplists:get_value(<<"spotify">>, Ext);
+                              <<>> ->
+                                  undefined
+                          end,
             ?DEBUG(SpotifyLink),
 
             case z_db:q("SELECT MAX(ts) FROM track_track WHERE track_id = $1 AND spotify = $2  ", [TrackId, SpotifyLink], Context) of
@@ -103,15 +107,13 @@ collect_track(UserId, Context) ->
                                          {limit, 1}],
                                         Context),
     P1 = z_convert:convert_json(P),
-    ?DEBUG(P1),
-
+    %?DEBUG(P1),
     [{recenttracks, [{track, T}, _]}] = P1,
     TrackEl = case T of
                 [T0, _] -> T0;
                 X -> X
             end,
-    ?DEBUG(TrackEl),
-
+    %?DEBUG(TrackEl),
     case proplists:get_value('@attr', TrackEl) of
         [{nowplaying,<<"true">>}] ->
             Artist = text(proplists:get_value(artist, TrackEl)),

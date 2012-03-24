@@ -20,26 +20,38 @@ Track: {{ id.title }}
     {% endfor %}
 </ul>
 
-<script type="text/javascript" src="//maps.googleapis.com/maps/api/js?sensor=false"></script>
+{% with m.track[id].pos as points %}
+{% if points %}
+<script src="http://maps.googleapis.com/maps/api/js?libraries=geometry&key=AIzaSyCRaWRbcCzpWMtczsCS2vzrSMdVf2wkU8o&sensor=false"></script>
 
 <div id="map" style="width: 100%; height: 500px"></div>
 
 <script>
       var map;
       function initialize() {
-        var myOptions = {
-          zoom: 8,
-          center: new google.maps.LatLng(-34.397, 150.644),
+          var points = {{ points|to_json }};
+
+          var myOptions = {
+          zoom: 17,
+          center: new google.maps.LatLng(points[0].lat, points[0].long),
           mapTypeId: google.maps.MapTypeId.ROADMAP
         };
-        map = new google.maps.Map(document.getElementById('map_canvas'),
-            myOptions);
+        map = new google.maps.Map(document.getElementById('map'),
+        myOptions);
+        for (var i=0; i<points.length; i++) {
+            var m = new google.maps.Marker({position: new google.maps.LatLng(points[i].lat, points[i].long), map: map, title: points[i].ts});
+            }
       }
 
       google.maps.event.addDomListener(window, 'load', initialize);
-//      map.init({{ m.track[id].pos|to_json }});
-</script>
-AIzaSyCRaWRbcCzpWMtczsCS2vzrSMdVf2wkU8o
-{% button text="delete" postback={remove_track id=id} delegate=`playmobil` %}
+  </script>
+{% else %}
+
+{% button text="Delete this track!!" postback={remove_track id=id} delegate=`playmobil` %}
+  
+{% endif %}
+{% endwith %}
+
+
 
 {% endblock %}
