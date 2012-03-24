@@ -29,14 +29,15 @@
 
 -include_lib("include/zotonic.hrl").
 
--export([authorize_url/1, api_sig/2, request/3]).
+-export([authorize_url/1, api_sig/2,
+         request/3,
+         request_unauthorized/3]).
 
 authorize_url(Context) ->
     "http://www.last.fm/api/auth/?api_key=" ++ z_convert:to_list(m_config:get_value(?MODULE, api_key, Context)).
 
 
 request(Method, Args, Context) ->
-
     Args1 = [{method, Method}, {api_key, m_config:get_value(?MODULE, api_key, Context)} | Args],
     Sig = api_sig(Args1, Context),
     Args2 = [{api_sig, Sig} | Args1],
@@ -44,6 +45,16 @@ request(Method, Args, Context) ->
                                 ["&", z_utils:url_encode(z_convert:to_list(K)), "=",
                                  z_utils:url_encode(z_convert:to_list(V)) | Acc] end,
                         [], Args2)),
+    Url = ?URL_BASE ++ "?" ++ Query ++ "&format=json",
+    {ok, {_, _, Body}} = httpc:request(Url),
+    mochijson2:decode(Body).
+
+request_unauthorized(Method, Args, Context) ->
+    Args1 = [{method, Method}, {api_key, m_config:get_value(?MODULE, api_key, Context)} | Args],
+    [_|Query] = lists:flatten(lists:foldr(fun({K, V}, Acc) ->
+                                ["&", z_utils:url_encode(z_convert:to_list(K)), "=",
+                                 z_utils:url_encode(z_convert:to_list(V)) | Acc] end,
+                        [], Args1)),
     Url = ?URL_BASE ++ "?" ++ Query ++ "&format=json",
     {ok, {_, _, Body}} = httpc:request(Url),
     mochijson2:decode(Body).
