@@ -12,10 +12,6 @@ Track: {{ id.title }}
 
 <h3>Tracks:</h3>
 
-<pre>
-    {{ m.track[id].tracks|to_json }}
-</pre>
-
 <ul data-role="listview" data-inset="true" >
     {% for row in m.track[id].tracks %}
     <li>
@@ -39,6 +35,6 @@ Track: {{ id.title }}
 {% endif %}
 {% endwith %}
 
-
+{% wire name="marker_move" postback={marker_move} delegate=`playmobil` %}
 
 {% endblock %}

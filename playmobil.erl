@@ -41,6 +41,16 @@
 %% API
 %%====================================================================
 
+event(#postback{message={marker_move, A}}, Context) ->
+    ?DEBUG(A),
+    [{long, Lo}, {lat, La}, {ts, Ts}, {track_id, Ti}] = z_context:get_q([track_id, ts, lat, long], Context),
+    ?DEBUG(Ti),
+    m_track:update_location(z_convert:to_integer(Ti),
+                            z_convert:to_datetime(Ts),
+                            z_convert:to_float(Lo),
+                            z_convert:to_float(La), Context),
+    Context;
+    
 event(#postback{message={get_location, _A}}, Context) ->
     R = playmobil_fetch:collect_position(z_acl:user(Context), Context),
     ?DEBUG(R),
