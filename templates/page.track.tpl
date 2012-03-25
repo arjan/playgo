@@ -30,25 +30,8 @@ Track: {{ id.title }}
 <div id="map" style="width: 100%; height: 500px"></div>
 
 <script>
-      var map;
-      function initialize() {
-          var points = {{ points|to_json }};
-
-          var myOptions = {
-          zoom: 17,
-          center: new google.maps.LatLng(points[0].lat, points[0].long),
-          mapTypeId: google.maps.MapTypeId.ROADMAP
-        };
-        map = new google.maps.Map(document.getElementById('map'),
-        myOptions);
-        for (var i=0; i<points.length; i++) {
-            var m = new google.maps.Marker({position: new google.maps.LatLng(points[i].lat, points[i].long), map: map, title: points[i].ts});
-            }
-      }
-
-      //google.maps.event.addDomListener(window, 'load', initialize);
-      initialize();
-  </script>
+    new PlayGo({{ m.track[id].tracks|to_json }}, '#map');
+</script>
 {% else %}
 
 {% button text="Delete this track!!" postback={remove_track id=id} delegate=`playmobil` %}

@@ -8,7 +8,8 @@
          m_find_value/3,
          m_to_list/2,
          m_value/2,
-         install/1
+         install/1,
+         update_location/5
 ]).
 
 
@@ -31,7 +32,7 @@ m_to_list(_, _Context) ->
     
 %% @doc Transform a model value so that it can be formatted or piped through filters
 %% @spec m_value(Source, Context) -> term()
-m_value(#m{value=#m{value={cat, Id}}}, Context) ->
+m_value(#m{value=#m{value={cat, _Id}}}, _Context) ->
     ok.%get(Id, Context).
 
 install(C) ->
@@ -44,3 +45,7 @@ install(C) ->
         true -> nop;
         false -> z_db:q("CREATE TABLE track_pos (track_id int, ts timestamp, lat float, long float)", C)
     end.
+
+update_location(TrackId, Ts, Long, Lat, Context) ->
+    z_db:q("UPDATE track_track SET long=$1, lat=$2 WHERE track_id=$3 AND ts=$4",
+           [Long, Lat, TrackId, Ts], Context).

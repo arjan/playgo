@@ -99,9 +99,8 @@ augment_song(Track, Positions, Context) ->
     ?DEBUG(Pos),
     TrackId = proplists:get_value(track_id, Track),
     {Long, Lat} = Pos,
-    z_db:q("UPDATE track_track SET long=$1, lat=$2 WHERE track_id=$3 AND ts=$4",
-           [Long, Lat, TrackId, Dt], Context),
-    ok.
+    m_track:update_location(TrackId, Dt, Long, Lat, Context).
+
 
 %% @doc Collect all song + pos for current tracks
 collect_all(Context) ->

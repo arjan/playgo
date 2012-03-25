@@ -21,10 +21,10 @@
 {% else %}
 {% include "_user_start.tpl" %}
 {% endif %}
-#
+{#
 {% button text="Get current song" postback={get_song} delegate=`playmobil` %}
 {% button text="Get my location" postback={get_location} delegate=`playmobil` %}
-#
+#}
 {% endif %}
 {% endblock %}
 

@@ -22,6 +22,7 @@
         "js/apps/zotonic-1.0.js"
         "js/apps/z.widgetmanager.js"
         "js/modules/jquery.loadmask.js"
+        "js/map.js"
         %}
         {% block _js_include_extra %}{% endblock %}
         {% stream %}
