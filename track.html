@@ -1,109 +1,69 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>
-Track: Unknown track
-</title>
+<head>
+    <title>
+        Track: Unknown track
+    </title>
 
-        <link href="/lib/css/jquery.mobile-1.0b3.min~63499832187.css" type="text/css" media="all" rel="stylesheet"/>
+    <link href="./lib/css/jquery.mobile-1.0b3.min.css" type="text/css" media="all" rel="stylesheet"/>
 
-        <link href="/lib/css/jquery.loadmask~63490848291.css" type="text/css" media="all" rel="stylesheet"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black"/>
 
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <script src="./lib/js/jquery-1.6.2.min.js"></script>
+    <script src="./lib/js/jquery.mobile-1.0b3.min.js"></script>
+    <script src="http://maps.googleapis.com/maps/api/js?libraries=geometry&key=AIzaSyCRaWRbcCzpWMtczsCS2vzrSMdVf2wkU8o&sensor=false"></script>
+</head>
+<body>
 
-        <script src="/lib/js/jquery-1.6.2.min~jquery.mobile-1.0b3.min~63499832187.js" type="text/javascript"></script>
-        <script src="http://maps.googleapis.com/maps/api/js?libraries=geometry&key=AIzaSyCRaWRbcCzpWMtczsCS2vzrSMdVf2wkU8o&sensor=false"></script>
-    </head>
-    <body>
+<div data-role="page">
 
-        <script src="/lib/js/apps/zotonic-1.0~z.widgetmanager~/js/modules/jquery.loadmask~63499641333.js" type="text/javascript"></script>
-        
-        
+    <div data-role="header" id="header-top">
+        <h1><span>Track: Unknown track</span></h1>
+    </div>
 
-        
-        <div data-role="page">
+    <div data-role="content">
 
-            <div data-role="header" id="header-top">
-                
-                <h1><span>
-Track: Unknown track
-</span></h1>
-                
-            </div>
+        <p>
+            Created on 25 March 2012 @ 10:58 by
+            <a href="/en/page/325/acscherp">acscherp</a>
+        </p>
 
-            <div data-role="content">
-                
-                
-<p>
-    Created on 25 March 2012 @ 10:58 by
-    <a href="/en/page/325/acscherp">acscherp</a>
-</p>
+        <h3>Tracks:</h3>
 
-<h3>Tracks:</h3>
+        <ul data-role="listview" data-inset="true">
+            <li>
+                <a rel="external" href="spotify:track:4GC6X2HV0D754ETdPT7Cck">
+                    James Blake &mdash; The Wilhelm Scream at 10:59</a>
+            </li>
+            <li>
+                <a rel="external" href="spotify:track:2XdKSxqc1q9q74sOMZ9aWy">
+                    James Blake &mdash; I Never Learnt to Share at 11:12</a>
+            </li>
+        </ul>
 
-<ul data-role="listview" data-inset="true" >
-    
-    <li>
-        <a rel="external" href="spotify:track:4GC6X2HV0D754ETdPT7Cck">James Blake &mdash; The Wilhelm Scream at 10:59</a>
-    </li>
-    
-    <li>
-        <a rel="external" href="spotify:track:2XdKSxqc1q9q74sOMZ9aWy">James Blake &mdash; I Never Learnt to Share at 11:12</a>
-    </li>
-    
-</ul>
+        <div id="map" style="width: 100%; height: 500px"></div>
 
+        <script>
+            var points = [
+                {"track_id":348,"ts":"2012-03-25 11:41:18","track":"Measurements","artist":"James Blake","spotify":"spotify:track:7qr4FVHFGviTFPXjgbiRzW","lat":52.37244358657523,"long":4.884197},
+                {"track_id":348,"ts":"2012-03-25 11:46:33","track":"(It's Not War) Just The End Of Love","artist":"Manic Street Preachers","spotify":"spotify:track:2l3ltbCc6UuyfTegHiSqzS","lat":52.37288207799176,"long":4.884240458333333},
+                {"track_id":348,"ts":"2012-03-25 11:49:33","track":"(Re)moved","artist":"The Philadelphia Experiment","spotify":"spotify:track:5t4HbuJ2eRuCGuRl0SGt95","long":4.8832914,"lat":52.37683850526008},
+                {"track_id":348,"ts":"2012-03-25 11:50:48","track":"Pump Up The Jam","artist":"Technotronic","spotify":"spotify:track:1ZtzjvhIcLoogzOpt4rKoa","long":4.8832914,"lat":52.37683850526008},
+                {"track_id":348,"ts":"2012-03-25 11:52:18","track":"Punt","artist":"Kraantje Pappie","spotify":"spotify:track:39vT12J3V6u3qySIPpFq58","long":4.8832914,"lat":52.37683850526008}
+            ]
+        </script>
 
+        <script src="lib/js/map.js"></script>
+        <script>
+            new PlayGo(points, '#map');
+        </script>
 
+    </div>
 
-<div id="map" style="width: 100%; height: 500px"></div>
+</div>
 
-<script>
-      var map;
-      function initialize() {
-          var points = [{"track_id":346,"ts":"2012-03-25 10:57:30","lat":52.3702157,"long":4.8951679}];
-
-          var myOptions = {
-          zoom: 17,
-          center: new google.maps.LatLng(points[0].lat, points[0].long),
-          mapTypeId: google.maps.MapTypeId.ROADMAP
-        };
-        map = new google.maps.Map(document.getElementById('map'),
-        myOptions);
-        for (var i=0; i<points.length; i++) {
-            var m = new google.maps.Marker({position: new google.maps.LatLng(points[i].lat, points[i].long), map: map, title: points[i].ts});
-            }
-      }
-
-      //google.maps.event.addDomListener(window, 'load', initialize);
-      initialize();
-  </script>
-
-
-
-
-
-
-                
-            </div>
-
-            
-
-<script type='text/javascript'>
-$(function() {
-z_pageid="R6hM1dirLDlYaDMUzQqb";z_language="en";z_init_postback_forms();
-z_default_form_postback = "fzzT0lmpeY08Jef2OdCJJ3qN4e2DaAVrAAZzdWJtaXRkAAl1bmRlZmluZWRkAAl1bmRlZmluZWRqZAANcmVzb3VyY2VfcGFnZQ";
-z_stream_start('playmobil.nu:8000');
-});
-</script>
-
-        </div>
-        
-
-        
-
-    </body>
+</body>
 </html>
