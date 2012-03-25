@@ -53,24 +53,54 @@ stop(UserId, Context) ->
 
     augment(TrackId, Context),
     %% mark track done
-    m_rsc:update(UserId, [{current_track, undefined}], Context),
+%    m_rsc:update(UserId, [{current_track, undefined}], Context),
     ok.
 
 
 augment(TrackId, Context) ->
-    Tracks = z_db:assoc("SELECT * FROM track_track WHERE track_id = $1", [TrackId], Context),
-    Positions = z_db:assoc("SELECT * FROM track_pos WHERE track_id = $1", [TrackId], Context),
+    Tracks = z_db:assoc("SELECT * FROM track_track WHERE track_id = $1 ORDER BY ts", [TrackId], Context),
+    Positions = z_db:assoc("SELECT * FROM track_pos WHERE track_id = $1 ORDER BY ts", [TrackId], Context),
 
     [augment_song(Track, Positions, Context) || Track <- Tracks],
     ok.
 
 augment_song(Track, Positions, Context) ->
     T = fun(D) -> z_datetime:datetime_to_timestamp(D) end,
-    Date = T(proplists:get_value(ts, Track)),
+    Dt = proplists:get_value(ts, Track),
+    Date = T(Dt),
 
+    Last = hd(lists:reverse(Positions)),
+    {LastLong, LastLat} = {proplists:get_value(long, Last),proplists:get_value(lat, Last)},
+    
     [_|SideBySide] = lists:zip([[]|Positions], Positions++[[]]),
-    io:format("~p", [SideBySide]),
 
+    Interpolate = fun(Delta, X, Y) -> Delta*X + (1-Delta)*Y end,
+                      
+    Pos = lists:foldr(fun({_, []}, Pos) ->
+                              %% last, without pos
+                              Pos;
+                         ({B, A}, _Pos) ->
+                              DateA = T(proplists:get_value(ts, A)),
+                              DateB = T(proplists:get_value(ts, B)),
+                              case {DateA =< Date, DateB =< Date} of
+                                  {false, true} ->
+                                      %% inbetween
+                                      Delta = (DateB - Date) / (DateB - DateA),
+                                      {Interpolate(Delta, proplists:get_value(long, A), proplists:get_value(long, B)),
+                                       Interpolate(Delta, proplists:get_value(lat, A), proplists:get_value(lat, B))};
+                                  _ ->
+                                      _Pos
+                              end
+                      end,
+                      {LastLong, LastLat},
+                      SideBySide),
+
+    ?DEBUG(Track),
+    ?DEBUG(Pos),
+    TrackId = proplists:get_value(track_id, Track),
+    {Long, Lat} = Pos,
+    z_db:q("UPDATE track_track SET long=$1, lat=$2 WHERE track_id=$3 AND ts=$4",
+           [Long, Lat, TrackId, Dt], Context),
     ok.
 
 %% @doc Collect all song + pos for current tracks
@@ -170,9 +200,14 @@ collect_position(UserId, Context) ->
 %    L = mod_auth_google:request(UserId, ?LOCATION_LIST, Context),
  %   ?DEBUG(L),
     Url = z_convert:to_list(z_html:unescape(m_rsc:p(UserId, google_url, Context))),
-    {ok, {{_, _Code, _}, _, Body}} = httpc:request(get, {Url, []}, [], []),
-    {match, [[Lat, Long]]} = re:run(Body, "center=(.*?),(.*?)&", [global, {capture, all_but_first, list}]),
-    {calendar:local_time(), z_convert:to_float(Long), z_convert:to_float(Lat)}.
+    case z_utils:is_empty(Url) of
+        false ->
+            {ok, {{_, _Code, _}, _, Body}} = httpc:request(get, {Url, []}, [], []),
+            {match, [[Lat, Long]]} = re:run(Body, "center=(.*?),(.*?)&", [global, {capture, all_but_first, list}]),
+            {calendar:local_time(), z_convert:to_float(Long), z_convert:to_float(Lat)};
+        true  ->
+            error
+    end.
 
 
 map_latitude_item(P) ->
