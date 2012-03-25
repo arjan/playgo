@@ -6,7 +6,7 @@
         {% lib "css/jquery.mobile-1.0b3.min.css"
         %}
 {#        <link rel="stylesheet" href="/lib/css/{% block color %}blue{% endblock %}.css" /> #}
-        {% lib "css/jquery.loadmask.css" %}
+        {% lib "css/playgo.css" %}
 
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 

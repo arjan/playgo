@@ -2,7 +2,7 @@
 
 {% block content %}
 
-<h1>Welcome to playmobil</h1>
+<h1>Welcome to PlayGo</h1>
 
 {% if not m.acl.user %}
     {% button text="Logon with last.fm"
