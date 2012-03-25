@@ -48,6 +48,9 @@ request(UserId, Url, Context) ->
         403 ->
             ?DEBUG(Payload),
             error;
+        503 ->
+            ?DEBUG(Payload),
+            error;
         401 ->
             %% extend code
             ?DEBUG(Payload),
@@ -57,9 +60,6 @@ request(UserId, Url, Context) ->
             ok
     end.
     
-renew_token(UserId, Context) ->
-    
-    ok.
 
 %% @doc Return the URI at which to authorize at google.
 authorize_uri(Context) ->

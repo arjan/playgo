@@ -67,9 +67,7 @@ event(#postback{message={start_track, _A}}, Context) ->
     z_render:wire({redirect, [{dispatch, auth_google_authorize}]}, Context);
 
 event(#postback{message={stop_track, _A}}, Context) ->
-    Id = z_acl:user(Context),
-    %TrackId = m_rsc:p(Id, current_track, Context),
-    m_rsc:update(Id, [{current_track, undefined}], Context),
+    playmobil_fetch:stop(z_acl:user(Context), Context),
     z_render:wire({reload, []}, Context).
 
 

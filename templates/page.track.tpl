@@ -22,7 +22,6 @@ Track: {{ id.title }}
 
 {% with m.track[id].pos as points %}
 {% if points %}
-<script src="http://maps.googleapis.com/maps/api/js?libraries=geometry&key=AIzaSyCRaWRbcCzpWMtczsCS2vzrSMdVf2wkU8o&sensor=false"></script>
 
 <div id="map" style="width: 100%; height: 500px"></div>
 
@@ -43,7 +42,8 @@ Track: {{ id.title }}
             }
       }
 
-      google.maps.event.addDomListener(window, 'load', initialize);
+      //google.maps.event.addDomListener(window, 'load', initialize);
+      initialize();
   </script>
 {% else %}
 

@@ -24,14 +24,50 @@
 -include_lib("include/zotonic.hrl").
 
 -define(CURRENT_LOCATION, "https://www.googleapis.com/latitude/v1/currentLocation").
+-define(LOCATION_LIST, "https://www.googleapis.com/latitude/v1/location").
 
 
 -export([
          collect_all/1,
          collect_track/2,
-         collect_position/2
+         collect_position/2,
+         stop/2
         ]).
 
+
+stop(UserId, Context) ->
+    TrackId = m_rsc:p(UserId, current_track, Context),
+
+    %% [{data, [{kind,<<"latitude#locationFeed">>},{items, L}]}] = mod_auth_google:request(UserId, ?LOCATION_LIST, Context),
+
+    %% Items = lists:map(fun (Item) ->
+    %%                           store_latitude(TrackId, map_latitude_item(Item), Context)
+    %%                   end, L),
+    %% ?DEBUG(Items),
+
+    %% augment tracks with geo
+
+    augment(TrackId, Context),
+    %% mark track done
+    %m_rsc:update(UserId, [{current_track, undefined}], Context),
+    ok.
+
+
+augment(TrackId, Context) ->
+    Tracks = z_db:assoc("SELECT * FROM track_track WHERE track_id = $1", [TrackId], Context),
+    Positions = z_db:assoc("SELECT * FROM track_pos WHERE track_id = $1", [TrackId], Context),
+
+    [augment_song(Track, Positions, Context) || Track <- Tracks],
+    ok.
+
+augment_song(Track, Positions, Context) ->
+    T = fun(D) -> z_datetime:datetime_to_timestamp(D) end,
+    Date = T(proplists:get_value(ts, Track)),
+
+    [_|SideBySide] = lists:zip([[]|Positions], Positions++[[]]),
+    io:format("~p", [SideBySide]),
+
+    ok.
 
 %% @doc Collect all song + pos for current tracks
 collect_all(Context) ->
@@ -45,7 +81,7 @@ collect_all(Context) ->
 
 
 collect_for_person(UserId, TrackId, Context) ->
-    ?DEBUG(UserId),
+    %?DEBUG(UserId),
     
     case catch collect_track(UserId, Context) of
         {Artist, Track} ->
@@ -83,16 +119,8 @@ collect_for_person(UserId, TrackId, Context) ->
     end,
 
     case catch collect_position(UserId, Context) of
-        {Date, Long, Lat} ->
-            ?DEBUG(TrackId),
-            case z_db:q("SELECT 1 FROM track_pos WHERE track_id = $1 AND ts=$2 AND long=$3 and lat=$4",
-                        [TrackId, Date, Long, Lat], Context) of
-                [] ->
-                    z_db:insert(track_pos, [{track_id, TrackId}, {ts, Date},
-                                            {long, Long}, {lat, Lat}], Context);
-                _ ->
-                    ign
-            end;
+        {_,_,_}=Pos ->
+            store_latitude(TrackId, Pos, Context);
 
         R3 -> ?DEBUG(R3)
     end,
@@ -135,11 +163,34 @@ text(Elt) -> proplists:get_value('#text', Elt).
 
 %% @doc Collect the user's position according to Google latitude.
 collect_position(UserId, Context) ->
+%    L = mod_auth_google:request(UserId, ?LOCATION_LIST, Context),
+ %   ?DEBUG(L),
     [{data, P}] = mod_auth_google:request(UserId, ?CURRENT_LOCATION, Context),
     ?DEBUG(P),
+    map_latitude_item(P).
+
+map_latitude_item(P) ->
     TS = z_convert:to_integer(proplists:get_value(timestampMs, P)) div 1000,
     Now = z_datetime:timestamp_to_datetime(TS),
     Long = proplists:get_value(longitude, P),
     Lat = proplists:get_value(latitude, P),
     {Now, Long, Lat}.
+
+
+store_latitude(TrackId, {Date, Long, Lat}, Context) ->
+    Created = m_rsc:p(TrackId, created, Context),
+    case Created < Date of
+        _ ->
+            case z_db:q("SELECT 1 FROM track_pos WHERE track_id = $1 AND long=$2 and lat=$3",
+                        [TrackId, Long, Lat], Context) of
+                [] ->
+                    z_db:insert(track_pos, [{track_id, TrackId}, {ts, Date},
+                                            {long, Long}, {lat, Lat}], Context),
+                    ok;
+                _ ->
+                    ign
+            end;
+        false ->
+            date_range
+    end.
 

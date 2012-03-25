@@ -13,7 +13,8 @@
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black" />
 
-        {% lib "js/jquery-1.6.2.min.js" "js/jquery.mobile-1.0b3.min.js" "js/touch-scroll.min.js" "js/cinema.js" %}
+        {% lib "js/jquery-1.6.2.min.js" "js/jquery.mobile-1.0b3.min.js" %}
+        <script src="http://maps.googleapis.com/maps/api/js?libraries=geometry&key=AIzaSyCRaWRbcCzpWMtczsCS2vzrSMdVf2wkU8o&sensor=false"></script>
     </head>
     <body>
 
@@ -45,8 +46,6 @@
             {% script %}
         </div>
         {% endblock %}
-
-        <script>$(document).ready(function(){$('#header-top').touchScroll();});</script>
 
         {% all include "_html_body.tpl" %}
 

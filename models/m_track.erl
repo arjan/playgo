@@ -37,7 +37,8 @@ m_value(#m{value=#m{value={cat, Id}}}, Context) ->
 install(C) ->
     case z_db:table_exists(track_track, C) of
         true -> nop;
-        false -> z_db:q("CREATE TABLE track_track (track_id int, ts timestamp, track varchar(255), artist varchar(255), spotify varchar(255))", C)
+        false -> z_db:q("CREATE TABLE track_track (track_id int, ts timestamp, track varchar(255), 
+                         artist varchar(255), spotify varchar(255), lat float, long float)", C)
     end,
     case z_db:table_exists(track_pos, C) of
         true -> nop;
