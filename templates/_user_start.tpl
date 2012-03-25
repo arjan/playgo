@@ -7,16 +7,25 @@
 {% button text="Logon to last.fm" action={redirect dispatch="lastfm_authorize" p=page} %}
 {% endif %}
 
-{% if id.google_token %}
+{% if id.google_url %}
 <h2>Step 2: OK</h1>
+
+
 <p>You have authorized this app to use you location.</p>
 <p>When you are ready, start your track by clicking below.</p>
 
+<iframe width="500" height="200" src="{{ id.google_url }}"></iframe>
+<a href="#" id="reset">reset url</a>
+{% wire id="reset" postback={reset_badge_url} delegate=`playmobil` %}
 
 {% button text="Start a new track!" postback={start_track} delegate=`playmobil` %}
 
 {% else %}
-{% button text="Logon to google" action={redirect dispatch="auth_google_authorize" p=page} %}
+<h2>Enter latitiude public badge url</h2>
+<input type="text" id="foo" />
+
+{% wire id="foo" type="change" postback={save_badge_url} delegate=`playmobil` %}
+
 {% endif %}
 
 
