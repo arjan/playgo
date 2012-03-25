@@ -21,9 +21,9 @@
 m_find_value(Id, M=#m{value=undefined}, _Context) ->
     M#m{value=Id};
 m_find_value(tracks, #m{value=Id}, Context) ->
-    z_db:assoc("SELECT * FROM track_track WHERE track_id = $1", [Id], Context);
+    z_db:assoc("SELECT * FROM track_track WHERE track_id = $1 ORDER BY ts", [Id], Context);
 m_find_value(pos, #m{value=Id}, Context) ->
-    z_db:assoc("SELECT * FROM track_pos WHERE track_id = $1", [Id], Context).
+    z_db:assoc("SELECT * FROM track_pos WHERE track_id = $1 ORDER BY ts", [Id], Context).
 
 %% @doc Transform a m_config value to a list, used for template loops
 %% @spec m_to_list(Source, Context) -> List

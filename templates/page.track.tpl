@@ -1,18 +1,12 @@
 {% extends "mobilebase.tpl" %}
 
 {% block title %}
-Track: {{ id.title }}
+PlayGo
 {% endblock %}
 
 {% block content %}
-<p>
-    Created on {{ id.created|date:"j F Y @ H:i" }} by
-    <a href="{{ id.creator_id.page_url }}">{{ id.creator_id.title }}</a>
-</p>
 
-<h3>Tracks:</h3>
-
-<ul data-role="listview" data-inset="true" >
+<ul data-role="listview"  >
     {% for row in m.track[id].tracks %}
     <li>
         <a rel="external" href="{{ row.spotify }}">{{ row.artist }} &mdash; {{ row.track }} at {{ row.ts|date:"H:i" }}</a>
@@ -36,5 +30,11 @@ Track: {{ id.title }}
 {% endwith %}
 
 {% wire name="marker_move" postback={marker_move} delegate=`playmobil` %}
+
+<p>
+    Created on {{ id.created|date:"j F Y @ H:i" }} by
+    <a href="{{ id.creator_id.page_url }}">{{ id.creator_id.title }}</a>
+</p>
+
 
 {% endblock %}
