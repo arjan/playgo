@@ -64,11 +64,21 @@ event(#postback{message={start_track, _A}}, Context) ->
                                   {title, "Unknown track"}],
                                  Context),
     m_rsc:update(Id, [{current_track, TrackId}], Context),
-    z_render:wire({redirect, [{dispatch, auth_google_authorize}]}, Context);
+    z_render:wire({redirect, [{location, m_rsc:p(TrackId, page_url, Context)}]}, Context);
 
 event(#postback{message={stop_track, _A}}, Context) ->
     playmobil_fetch:stop(z_acl:user(Context), Context),
+    z_render:wire({reload, []}, Context);
+
+event(#postback{message={reset_badge_url, _A}}, Context) ->
+    m_rsc:update(z_acl:user(Context), [{google_url, <<>>}], Context),
+    z_render:wire({reload, []}, Context);
+
+event(#postback{message={save_badge_url, _A}}, Context) ->
+    Url = z_context:get_q("triggervalue", Context),
+    m_rsc:update(z_acl:user(Context), [{google_url, Url}], Context),
     z_render:wire({reload, []}, Context).
+
 
 
 

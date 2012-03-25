@@ -38,6 +38,10 @@
 stop(UserId, Context) ->
     TrackId = m_rsc:p(UserId, current_track, Context),
 
+    R = mod_auth_google:request(UserId, "https://www.googleapis.com/oauth2/v1/userinfo", Context),
+    ?DEBUG(R),
+
+    
     %% [{data, [{kind,<<"latitude#locationFeed">>},{items, L}]}] = mod_auth_google:request(UserId, ?LOCATION_LIST, Context),
 
     %% Items = lists:map(fun (Item) ->
@@ -49,7 +53,7 @@ stop(UserId, Context) ->
 
     augment(TrackId, Context),
     %% mark track done
-    %m_rsc:update(UserId, [{current_track, undefined}], Context),
+    m_rsc:update(UserId, [{current_track, undefined}], Context),
     ok.
 
 
@@ -165,9 +169,11 @@ text(Elt) -> proplists:get_value('#text', Elt).
 collect_position(UserId, Context) ->
 %    L = mod_auth_google:request(UserId, ?LOCATION_LIST, Context),
  %   ?DEBUG(L),
-    [{data, P}] = mod_auth_google:request(UserId, ?CURRENT_LOCATION, Context),
-    ?DEBUG(P),
-    map_latitude_item(P).
+    Url = z_convert:to_list(z_html:unescape(m_rsc:p(UserId, google_url, Context))),
+    {ok, {{_, _Code, _}, _, Body}} = httpc:request(get, {Url, []}, [], []),
+    {match, [[Lat, Long]]} = re:run(Body, "center=(.*?),(.*?)&", [global, {capture, all_but_first, list}]),
+    {calendar:local_time(), z_convert:to_float(Long), z_convert:to_float(Lat)}.
+
 
 map_latitude_item(P) ->
     TS = z_convert:to_integer(proplists:get_value(timestampMs, P)) div 1000,
