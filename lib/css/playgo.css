@@ -1,0 +1,12 @@
+/* Overwrite hax */
+.ui-bar-a {
+    background-color: #fbe286;
+    background-image: -moz-linear-gradient(top, #fbe286, #f3cb36);
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#fbe286), to(#f3cb36));
+    color: #000;
+    text-shadow: none;
+}
+
+#map {
+    margin-top: 16px;
+}
